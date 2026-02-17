@@ -1328,7 +1328,8 @@ async function playSong(song, index, forceQuality = null, noPlay = false, isRetr
         console.log(`[Player] 播放歌曲: ${song.name} - ${song.singer} [${quality}]`);
 
         // ===== 尝试读取缓存链接 =====
-        const cacheKey = `lx_url_v2_${song.source}_${song.songmid || song.songId}_${quality}`;
+        const cleanedSong = cleanSongData(song);
+        const cacheKey = `lx_url_v3_${cleanedSong.id}_${quality}`; // v3 for standardized ID
         if (!isRetry && settings.enableSongUrlCache !== false && !forceQuality) {
             const cachedUrl = localStorage.getItem(cacheKey);
             if (cachedUrl) {
@@ -1409,7 +1410,7 @@ async function playSong(song, index, forceQuality = null, noPlay = false, isRetr
         // 优先级: 链接缓存 > 本地文件缓存 > 在线获取
         if (!isRetry && settings.enableServerCache && !forceQuality) {
             setPlayerStatus('正在检查服务器缓存...');
-            const serverCacheUrl = await checkServerCache(song, quality);
+            const serverCacheUrl = await checkServerCache(cleanedSong, quality);
             if (serverCacheUrl) {
                 console.log('[Player] 使用服务器文件缓存:', serverCacheUrl);
 
