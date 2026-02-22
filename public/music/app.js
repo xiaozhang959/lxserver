@@ -2515,9 +2515,9 @@ function updatePlaybackRateUI() {
     options.forEach(opt => {
         const rate = parseFloat(opt.dataset.rate);
         if (rate === currentPlaybackRate) {
-            opt.classList.add('font-bold', 'text-emerald-600');
+            opt.classList.add('active-option', 'font-bold');
         } else {
-            opt.classList.remove('font-bold', 'text-emerald-600');
+            opt.classList.remove('active-option', 'font-bold');
         }
     });
 }
@@ -2570,9 +2570,9 @@ function updatePlayModeUI() {
     // 高亮当前选中的选项
     options.forEach(opt => {
         if (opt.dataset.mode === playMode) {
-            opt.classList.add('bg-emerald-50', 'font-bold');
+            opt.classList.add('active-option', 'font-bold');
         } else {
-            opt.classList.remove('bg-emerald-50', 'font-bold');
+            opt.classList.remove('active-option', 'font-bold');
         }
     });
 }
@@ -4923,7 +4923,7 @@ async function renderCustomSources() {
                 handle: '.custom-source-handle',
                 ghostClass: 'sortable-ghost-solid',
                 chosenClass: 'sortable-chosen-item',
-                dragClass: 'opacity-0',
+                dragClass: 'sortable-drag-item',
 
                 // 核心配置
                 forceFallback: true,

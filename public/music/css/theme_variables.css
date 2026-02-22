@@ -241,13 +241,24 @@ i {
     background: #6b7280;
 }
 
-/* 强制适配文本类输入元素 */
-[data-appearance="dark"] input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
-[data-appearance="dark"] select,
-[data-appearance="dark"] textarea {
+/* 强制适配文本类输入元素 (支持模式切换与自动跟随系统) */
+:root[data-appearance="dark"] input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
+:root[data-appearance="dark"] select,
+:root[data-appearance="dark"] textarea {
     background-color: var(--bg-panel) !important;
     color: var(--text-main) !important;
     border-color: var(--border-main) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    :root:not([data-appearance="light"]) input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
+    :root:not([data-appearance="light"]) select,
+    :root:not([data-appearance="light"]) textarea {
+        background-color: var(--bg-panel) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-main) !important;
+    }
 }
 
 
