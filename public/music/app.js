@@ -95,6 +95,7 @@ let batchMode = false;
 let selectedItems = new Set(); // Set of item IDs
 let selectedSongObjects = new Map(); // Map of ID -> Song Object (for cross-page selection)
 let expandBtnTimeout = null; // 展开按钮淡化计时器
+let toggleLyricsBtnTimeout = null; // 歌词按钮淡化计时器
 
 // ===== 认证相关代码 (服务端 Cookie Session) =====
 let authEnabled = false;
@@ -568,6 +569,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const footer = document.getElementById('player-footer');
             if (footer && footer.classList.contains('translate-y-[110%]')) {
                 startExpandBtnTimer();
+            }
+        });
+    }
+
+    // 为歌词按钮添加悬停恢复逻辑
+    const toggleLyricsBtn = document.getElementById('btn-toggle-lyrics');
+    if (toggleLyricsBtn) {
+        toggleLyricsBtn.addEventListener('mouseenter', () => {
+            if (toggleLyricsBtnTimeout) clearTimeout(toggleLyricsBtnTimeout);
+            toggleLyricsBtn.classList.remove('faint');
+        });
+        toggleLyricsBtn.addEventListener('mouseleave', () => {
+            const view = document.getElementById('view-player-detail');
+            if (view && !view.classList.contains('translate-y-[100%]')) {
+                startToggleLyricsBtnTimer();
             }
         });
     }
@@ -3087,6 +3103,9 @@ function toggleLyrics() {
         // Trigger reflow
         void view.offsetWidth;
         view.classList.remove('translate-y-[100%]', 'opacity-0');
+
+        // 开始歌词按钮淡化倒计时
+        startToggleLyricsBtnTimer();
 
         // Update UI
         if (currentPlayingSong) {
@@ -6200,6 +6219,23 @@ function startExpandBtnTimer() {
         const footer = document.getElementById('player-footer');
         if (footer && footer.classList.contains('translate-y-[110%]')) {
             expandBtn.classList.add('faint');
+        }
+    }, 3000);
+}
+
+// 启动歌词按钮淡化计时器
+function startToggleLyricsBtnTimer() {
+    const toggleBtn = document.getElementById('btn-toggle-lyrics');
+    if (!toggleBtn) return;
+
+    if (toggleLyricsBtnTimeout) clearTimeout(toggleLyricsBtnTimeout);
+    toggleBtn.classList.remove('faint');
+
+    toggleLyricsBtnTimeout = setTimeout(() => {
+        // 只有当歌词页面处于显示状态时才淡化
+        const view = document.getElementById('view-player-detail');
+        if (view && !view.classList.contains('translate-y-[100%]')) {
+            toggleBtn.classList.add('faint');
         }
     }, 3000);
 }

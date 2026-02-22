@@ -325,13 +325,15 @@
         }
 
         /* Expand Button Faint Style */
-        #btn-expand-panel.faint {
+        #btn-expand-panel.faint,
+        #btn-toggle-lyrics.faint {
             opacity: 0.15 !important;
             background-color: rgba(255, 255, 255, 0.4) !important;
             border-color: rgba(200, 200, 200, 0.2) !important;
         }
 
-        #btn-expand-panel.faint:hover {
+        #btn-expand-panel.faint:hover,
+        #btn-toggle-lyrics.faint:hover {
             opacity: 1 !important;
             background-color: rgba(255, 255, 255, 0.9) !important;
         }
@@ -1021,6 +1023,36 @@
 
                         <!-- Display Settings Panel -->
                         <div id="settings-panel-display" class="hidden space-y-8 animate-fade-in">
+                            <!-- Appearance Selection -->
+                            <div>
+                                <h3 class="font-bold text-gray-800 text-lg mb-4 flex items-center">
+                                    <i class="fas fa-magic mr-2 text-emerald-500"></i> 外观设置 (Appearance)
+                                </h3>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <!-- Light -->
+                                    <button onclick="setAppearance('light')"
+                                        class="appearance-option flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-all ring-2 ring-transparent"
+                                        data-appearance="light">
+                                        <i class="fas fa-sun text-xl"></i>
+                                        <span class="text-xs font-bold">明亮模式</span>
+                                    </button>
+                                    <!-- Dark -->
+                                    <button onclick="setAppearance('dark')"
+                                        class="appearance-option flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-all ring-2 ring-transparent"
+                                        data-appearance="dark">
+                                        <i class="fas fa-moon text-xl"></i>
+                                        <span class="text-xs font-bold">暗黑模式</span>
+                                    </button>
+                                    <!-- System -->
+                                    <button onclick="setAppearance('system')"
+                                        class="appearance-option flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-all ring-2 ring-transparent"
+                                        data-appearance="system">
+                                        <i class="fas fa-desktop text-xl"></i>
+                                        <span class="text-xs font-bold">跟随系统</span>
+                                    </button>
+                                </div>
+                            </div>
+
                             <!-- Theme Selection -->
                             <div>
                                 <h3 class="font-bold text-gray-800 text-lg mb-4 flex items-center">
@@ -1648,7 +1680,7 @@
         <!-- Navbar / Controls -->
         <div
             class="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-6 h-20 pointer-events-none transition-all duration-300 [@media(max-height:500px)]:opacity-0 [@media(max-height:500px)]:pointer-events-none">
-            <button onclick="toggleLyrics()"
+            <button onclick="toggleLyrics()" id="btn-toggle-lyrics"
                 class="pointer-events-auto text-gray-600 hover:text-emerald-600 bg-white/40 hover:bg-white/80 rounded-full w-10 h-10 flex items-center justify-center transition-all shadow-sm backdrop-blur-md">
                 <i class="fas fa-chevron-down text-lg"></i>
             </button>

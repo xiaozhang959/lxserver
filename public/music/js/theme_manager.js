@@ -5,13 +5,16 @@
 // Available Themes
 const THEMES = ['emerald', 'blue', 'amber', 'violet', 'rose'];
 
-// Initialize Theme
+// Initialize Theme & Appearance
 function initTheme() {
     const savedTheme = localStorage.getItem('lx_theme') || 'emerald';
+    const savedAppearance = localStorage.getItem('lx_appearance') || 'system';
+
     setTheme(savedTheme, false);
+    setAppearance(savedAppearance, false);
 }
 
-// Set Theme
+// Set Theme (Colors)
 function setTheme(themeName, save = true) {
     if (!THEMES.includes(themeName)) return;
 
@@ -21,7 +24,7 @@ function setTheme(themeName, save = true) {
     // Save Preference
     if (save) {
         localStorage.setItem('lx_theme', themeName);
-        console.log(`[Theme] Applied: ${themeName}`);
+        console.log(`[Theme] Color scheme applied: ${themeName}`);
     }
 
     // 更新可视化颜色 (如果加载了可视化脚本)
@@ -33,6 +36,28 @@ function setTheme(themeName, save = true) {
     updateThemeSelectionUI(themeName);
 }
 
+// Set Appearance (Light/Dark/System)
+function setAppearance(mode, save = true) {
+    const validModes = ['light', 'dark', 'system'];
+    if (!validModes.includes(mode)) return;
+
+    // Apply to Root
+    if (mode === 'system') {
+        document.documentElement.removeAttribute('data-appearance');
+    } else {
+        document.documentElement.setAttribute('data-appearance', mode);
+    }
+
+    // Save Preference
+    if (save) {
+        localStorage.setItem('lx_appearance', mode);
+        console.log(`[Theme] Appearance mode applied: ${mode}`);
+    }
+
+    // Update UI in settings
+    updateAppearanceUI(mode);
+}
+
 function updateThemeSelectionUI(activeTheme) {
     document.querySelectorAll('.theme-option').forEach(btn => {
         const theme = btn.getAttribute('data-theme');
@@ -40,6 +65,19 @@ function updateThemeSelectionUI(activeTheme) {
             btn.setAttribute('data-active', 'true');
         } else {
             btn.setAttribute('data-active', 'false');
+        }
+    });
+}
+
+function updateAppearanceUI(activeMode) {
+    document.querySelectorAll('.appearance-option').forEach(btn => {
+        const mode = btn.getAttribute('data-appearance');
+        if (mode === activeMode) {
+            btn.classList.add('ring-emerald-500', 'border-emerald-500', 'text-emerald-600');
+            btn.classList.remove('border-gray-200', 'text-gray-600');
+        } else {
+            btn.classList.remove('ring-emerald-500', 'border-emerald-500', 'text-emerald-600');
+            btn.classList.add('border-gray-200', 'text-gray-600');
         }
     });
 }
@@ -82,9 +120,17 @@ function switchSettingsTab(tabName) {
     }
 }
 
+// Watch for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    const currentAppearance = localStorage.getItem('lx_appearance') || 'system';
+    if (currentAppearance === 'system') {
+        console.log(`[Theme] System color scheme changed to ${e.matches ? 'dark' : 'light'}`);
+        // No action needed as CSS media query handles it automatically,
+        // but this is a good place for JS-based adjustments if needed.
+    }
+});
+
 // Initialize on Load
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
-    // Default to System tab
-    // switchSettingsTab('system'); // Not needed as it's default HTML state
 });
