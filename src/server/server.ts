@@ -6,7 +6,7 @@ import { registerLocalSyncEvent, callObj, sync } from './sync'
 import { authCode, authConnect } from './auth'
 import { getAddress, sendStatus, decryptMsg, encryptMsg } from '@/utils/tools'
 import { accessLog, startupLog, syncLog } from '@/utils/log4js'
-import { SYNC_CLOSE_CODE, SYNC_CODE } from '@/constants'
+import { SYNC_CLOSE_CODE, SYNC_CODE, File } from '@/constants'
 import { getUserSpace, releaseUserSpace, getUserName, getServerId } from '@/user'
 import { createMsg2call } from 'message2call'
 import { ElFinderConnector, getSystemRoot } from './elfinderConnector'
@@ -994,6 +994,63 @@ const handleStartServer = async (port = 9527, ip = '127.0.0.1') => await new Pro
           } catch (err: any) {
             res.writeHead(500)
             res.end(err.message)
+          }
+        })
+        return
+      }
+
+      // [新增] Get User Settings (User Auth)
+      if (pathname === '/api/user/settings' && req.method === 'GET') {
+        const username = req.headers['x-user-name'] as string
+        const password = req.headers['x-user-password'] as string
+
+        const user = global.lx.config.users.find(u => u.name === username && u.password === password)
+        if (!user) {
+          res.writeHead(401)
+          res.end('Unauthorized')
+          return
+        }
+
+        const userSpace = getUserSpace(username)
+        const settingsPath = path.join(userSpace.dataManage.userDir, File.userSettingsJSON)
+
+        if (fs.existsSync(settingsPath)) {
+          const settingsData = fs.readFileSync(settingsPath, 'utf8')
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(settingsData)
+        } else {
+          res.writeHead(404)
+          res.end('Settings not found')
+        }
+        return
+      }
+
+      // [新增] Update User Settings (User Auth)
+      if (pathname === '/api/user/settings' && req.method === 'POST') {
+        const username = req.headers['x-user-name'] as string
+        const password = req.headers['x-user-password'] as string
+
+        const user = global.lx.config.users.find(u => u.name === username && u.password === password)
+        if (!user) {
+          res.writeHead(401)
+          res.end('Unauthorized')
+          return
+        }
+
+        void readBody(req).then(body => {
+          try {
+            const userSpace = getUserSpace(username)
+            const settingsPath = path.join(userSpace.dataManage.userDir, File.userSettingsJSON)
+
+            // Validate JSON
+            JSON.parse(body)
+
+            fs.writeFileSync(settingsPath, body, 'utf8')
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: true }))
+          } catch (err: any) {
+            res.writeHead(400)
+            res.end('Invalid JSON data')
           }
         })
         return

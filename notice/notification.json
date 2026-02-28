@@ -18,25 +18,25 @@
         }
     },
     {
-        "comment": "=== 版本更新 v1.6.1 ===",
-        "id": "update_v1_6_1",
+        "comment": "=== 版本更新 v1.6.2 ===",
+        "id": "update_v1_6_2",
         "status": "active",
         "type": "version",
         "logic": {
-            "target_version": "v1.6.1",
+            "target_version": "v1.6.2",
             "operator": "<",
             "interval_hours": 24
         },
         "ui": {
-            "title": "发现新版本 v1.6.1",
-            "date": "2026-02-27",
-            "message": "本次更新带来了以下修复与优化：\n1. 🎨 视觉重构：优化了确认框/输入框的显示风格，采用更稳重的纯色卡片设计。\n2. 🖼️ 跨域修复：解决了歌词卡片中由于 CORS 限制导致的封面图片无法显示的问题。\n3. 🚀 性能优化：引入智能图片加载代理，确保所有音源封面均可稳定展示并支持导出分享。",
+            "title": "发现新版本 v1.6.2",
+            "date": "2026-02-28",
+            "message": "本次更新带来了以下重要功能：\n1. 💾 自动同步：新增“保存设置到文件”，支持将个人偏好实时同步至服务器，实现跨端一致体验。\n2. 🚪 登出功能：同步面板新增“退出登录”按钮，更方便、更安全地管理您的账号同步状态。\n3. 🛠️ 逻辑重构：统一重置逻辑，优化设置项说明。",
             "confirm_text": "我知道了",
             "cancel_text": "稍后提醒"
         },
         "action": {
             "type": "link",
-            "url": "https://github.com/XCQ0607/lxserver/releases/tag/v1.6.1"
+            "url": "https://github.com/XCQ0607/lxserver/releases/tag/v1.6.2"
         }
     }
 ]

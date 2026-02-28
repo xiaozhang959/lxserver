@@ -69,6 +69,7 @@ export const File = {
   serverInfoJSON: 'serverInfo.json',
   userDir: 'users',
   userDevicesJSON: 'devices.json',
+  userSettingsJSON: 'settings.json',
   listDir: 'list',
   listSnapshotDir: 'snapshot',
   listSnapshotInfoJSON: 'snapshotInfo.json',

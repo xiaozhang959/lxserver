@@ -35,7 +35,7 @@ const audio = document.getElementById('audio-player');
 let currentPlaybackRate = 1.0;
 
 // Settings & Batch Selection
-let settings = {
+const DEFAULT_SETTINGS = {
     itemsPerPage: 20, // Default 20 items per page, can be 'all'
     preferredQuality: '320k', // 默认音质偏好
     enablePublicSources: true, // 是否显示公开源
@@ -70,8 +70,11 @@ let settings = {
     enableLyricCache: true,
     enableSongUrlCache: true,
     enableLyricGlow: true, // 歌词荧光效果 (默认开启)
-    playerBackground: 'blur' // 播放页背景: 'blur', 'solid', 'dark'
+    playerBackground: 'blur', // 播放页背景: 'blur', 'solid', 'dark'
+    saveAccountSettingsToFile: true // 同步账号设置到文件 (默认开启)
 };
+
+let settings = { ...DEFAULT_SETTINGS };
 
 // 歌词原始数据，用于设置切换时重新渲染
 let currentRawLrc = '';
@@ -3075,6 +3078,11 @@ function updateSetting(key, value) {
     // 实时同步 UI 并应用效果
     syncSettingsUI(key, value);
 
+    // [New] Push to server if enabled
+    if (settings.saveAccountSettingsToFile) {
+        pushSettingsToServer();
+    }
+
     // Special handlers for visual changes
     if (key.includes('Visualizer') || key.startsWith('visualizer')) {
         if (window.musicVisualizer) {
@@ -3227,6 +3235,11 @@ function syncSettingsUI(key = null, value = null) {
             applyPlayerBackground(value);
         }
 
+        if (key === 'saveAccountSettingsToFile') {
+            const check = document.getElementById('setting-save-settings-to-file');
+            if (check) check.checked = value;
+        }
+
         // 如果有其他需要实时更新的设置，可以在这里添加
         return;
     }
@@ -3303,6 +3316,11 @@ function syncSettingsUI(key = null, value = null) {
     const shortcuts = document.getElementById('setting-enable-shortcuts');
     if (shortcuts) {
         shortcuts.checked = settings.enableKeyboardShortcuts !== false;
+    }
+
+    const saveSettingsToFile = document.getElementById('setting-save-settings-to-file');
+    if (saveSettingsToFile) {
+        saveSettingsToFile.checked = settings.saveAccountSettingsToFile !== false;
     }
 
     const lyricGlow = document.getElementById('setting-enable-lyric-glow');
@@ -3418,11 +3436,20 @@ function updateStorageStatsUI() {
 }
 
 async function resetAllSettings() {
-    const ok = await showSelect('重置所有设置', '确定要重置吗？这不会删除您的歌单，但会恢复音质、列表显示、主题等设置到默认状态。', { danger: true });
+    const ok = await showSelect('重置所有设置', '确定要重置吗？这不会删除您的歌单，但会恢复音质、列表显示、主题等设置到默认状态。 (Restore all settings to default?)', { danger: true });
     if (!ok) return;
     try {
-        localStorage.removeItem('lx_settings');
+        // Reset to default
+        settings = { ...DEFAULT_SETTINGS };
+        window.settings = settings;
+        localStorage.setItem('lx_settings', JSON.stringify(settings));
         localStorage.removeItem('lx_playback_state'); // 同时重置播放进度记忆
+
+        // If sync enabled, push to server
+        if (settings.saveAccountSettingsToFile) {
+            pushSettingsToServer();
+        }
+
         showSuccess('设置已重置，正在重新加载页面...');
         setTimeout(() => {
             window.location.reload();
@@ -4378,6 +4405,120 @@ function switchSyncMode(mode) {
     }
 }
 
+
+async function pushSettingsToServer() {
+    if (!settings.saveAccountSettingsToFile) return;
+    // Only local sync mode supports this for now
+    if (localStorage.getItem('lx_sync_mode') !== 'local') return;
+
+    const user = localStorage.getItem('lx_sync_user');
+    const pass = localStorage.getItem('lx_sync_pass');
+
+    if (!user || !pass) return;
+
+    try {
+        const res = await fetch('/api/user/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-name': user,
+                'x-user-password': pass
+            },
+            body: JSON.stringify(settings)
+        });
+        if (res.ok) {
+            console.log('[Settings] 已成功同步到服务器');
+        }
+    } catch (e) {
+        console.error('[Settings] 同步到服务器失败:', e);
+    }
+}
+
+async function fetchSettingsFromServer() {
+    if (!settings.saveAccountSettingsToFile) return;
+    const user = localStorage.getItem('lx_sync_user');
+    const pass = localStorage.getItem('lx_sync_pass');
+
+    if (!user || !pass) return;
+
+    try {
+        console.log('[Settings] 正在从服务器尝试加载设置...');
+        const res = await fetch('/api/user/settings', {
+            headers: {
+                'x-user-name': user,
+                'x-user-password': pass
+            }
+        });
+        if (res.ok) {
+            const serverSettings = await res.json();
+            console.log('[Settings] 从服务器加载设置成功:', serverSettings);
+            // Merge settings
+            settings = { ...settings, ...serverSettings };
+            // Save to local
+            localStorage.setItem('lx_settings', JSON.stringify(settings));
+            // Update UI
+            syncSettingsUI();
+            if (typeof showSuccess === 'function') {
+                showSuccess('已从服务器恢复设置');
+            }
+        } else {
+            console.log('[Settings] 服务器无设置文件或加载失败');
+        }
+    } catch (e) {
+        console.error('[Settings] 从服务器加载设置失败:', e);
+    }
+}
+
+
+function updateSyncStatus(html, showLogout = true) {
+    const statusEl = document.getElementById('sync-status');
+    const settingsOption = document.getElementById('sync-settings-file-option');
+    if (!statusEl) return;
+
+    let fullHtml = html;
+    // Show logout button if requested AND we have active data or connection
+    const hasActiveLogin = currentListData || (syncManager && syncManager.client && syncManager.client.isConnected);
+    if (showLogout && hasActiveLogin) {
+        fullHtml += ` <button onclick="handleSyncLogout()" class="ml-2 text-red-500 hover:text-red-600 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded border border-red-200 hover:bg-red-300/10 transition-all">退出登录 (Logout)</button>`;
+    }
+    statusEl.innerHTML = fullHtml;
+}
+
+async function handleSyncLogout() {
+    if (syncManager && syncManager.client && typeof syncManager.client.close === 'function') {
+        syncManager.client.close();
+    }
+
+    currentListData = null;
+    localStorage.removeItem('lx_sync_mode');
+    localStorage.removeItem('lx_sync_user');
+    localStorage.removeItem('lx_sync_pass');
+    localStorage.removeItem('lx_sync_url');
+    localStorage.removeItem('lx_sync_code');
+    localStorage.removeItem('lx_ws_auth');
+    localStorage.removeItem('lx_list_data');
+
+    // Clear forms
+    const localUser = document.getElementById('sync-local-user');
+    const localPass = document.getElementById('sync-local-pass');
+    const remoteUrl = document.getElementById('sync-remote-url');
+    const remoteCode = document.getElementById('sync-remote-code');
+    if (localUser) localUser.value = '';
+    if (localPass) localPass.value = '';
+    if (remoteUrl) remoteUrl.value = '';
+    if (remoteCode) remoteCode.value = '';
+
+    // Reset UI Status (no logout button here)
+    updateSyncStatus('<i class="fas fa-circle text-[8px] text-gray-300"></i> 状态: 未连接', false);
+
+    // Clear sidebar lists
+    renderMyLists({ defaultList: [], loveList: [], userList: [] });
+
+    if (typeof showSuccess === 'function') {
+        showSuccess('已退出登录并清除同步数据');
+    }
+}
+
 async function handleLocalLogin() {
     const user = document.getElementById('sync-local-user').value;
     const pass = document.getElementById('sync-local-pass').value;
@@ -4405,11 +4546,16 @@ async function handleLocalLogin() {
             // [Cache] Save list data immediately for offline availability / quick load
             localStorage.setItem('lx_list_data', JSON.stringify(listData));
 
-            statusEl.innerHTML = `<i class="fas fa-check-circle text-emerald-500"></i> 已同步 (用户: ${user})`;
+            updateSyncStatus(`<i class="fas fa-check-circle text-emerald-500"></i> 已同步 (用户: ${user})`);
             // Save credentials to localStorage (Simple version)
             localStorage.setItem('lx_sync_mode', 'local'); // [Fix] Save mode
             localStorage.setItem('lx_sync_user', user);
             localStorage.setItem('lx_sync_pass', pass);
+
+            // [New] Fetch settings from server if enabled
+            if (settings.saveAccountSettingsToFile) {
+                fetchSettingsFromServer();
+            }
         } else {
             statusEl.innerHTML = '<i class="fas fa-times-circle text-red-500"></i> 登录失败: 用户名或密码错误';
         }
@@ -4523,7 +4669,7 @@ function handleRemoteConnect() {
 
                 // Render UI
                 renderMyLists(data);
-                statusEl.innerHTML = '<i class="fas fa-check-circle text-blue-500"></i> 数据已同步';
+                updateSyncStatus('<i class="fas fa-check-circle text-blue-500"></i> 数据已同步');
             },
             getSyncMode: async () => {
                 return new Promise((resolve) => {
@@ -4536,7 +4682,7 @@ function handleRemoteConnect() {
         // Setup Callbacks
         syncManager.client.onLogin = async (success, msg) => {
             if (success) {
-                statusEl.innerHTML = '<i class="fas fa-check-circle text-green-500"></i> 已连接 (等待同步...)';
+                updateSyncStatus('<i class="fas fa-check-circle text-green-500"></i> 已连接 (等待同步...)');
                 // Remove manual sync() call. Let the server drive the sync via RPC.
 
                 // Save connection info and authInfo to localStorage
@@ -5191,7 +5337,7 @@ window.addEventListener('load', () => {
                     syncManager.client.onLogin = (success) => {
                         if (success) {
                             console.log('[Cache] 自动重连成功');
-                            document.getElementById('sync-status').innerHTML = '<i class="fas fa-check-circle text-green-500"></i> 已自动重连';
+                            updateSyncStatus('<i class="fas fa-check-circle text-green-500"></i> 已自动重连');
                         } else {
                             console.log('[Cache] 自动重连失败,需要手动重新配对');
                             localStorage.removeItem('lx_ws_auth'); // Clear invalid auth
@@ -5210,6 +5356,8 @@ window.addEventListener('load', () => {
 
 window.switchSyncMode = switchSyncMode;
 window.handleLocalLogin = handleLocalLogin;
+window.handleSyncLogout = handleSyncLogout;
+window.resetAllSettings = resetAllSettings;
 
 // Helper to Push Changes to Remote
 async function pushDataChange() {
@@ -6450,6 +6598,8 @@ window.toggleLove = toggleLove;
 // Sync functions
 window.switchSyncMode = switchSyncMode;
 window.handleLocalLogin = handleLocalLogin;
+window.handleSyncLogout = handleSyncLogout;
+window.resetAllSettings = resetAllSettings;
 window.handleRemoteConnect = handleRemoteConnect;
 window.handleRemoteStep1 = handleRemoteStep1;
 window.handleRemoteBack = handleRemoteBack;
