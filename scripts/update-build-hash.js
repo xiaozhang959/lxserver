@@ -36,7 +36,7 @@ function getDirectoryHash(dir, exclude = [], extensions = []) {
     for (const file of files) {
         const content = fs.readFileSync(file);
         const ext = path.extname(file).toLowerCase();
-        const textExtensions = ['.js', '.ts', '.json', '.html', '.css', '.md'];
+        const textExtensions = ['.js', '.ts', '.json', '.html', '.css', '.md', '.svg', '.txt', '.cjs', '.mjs', '.xml', '.yaml', '.yml'];
 
         if (textExtensions.includes(ext)) {
             // 统一将 CRLF 转换为 LF 再计算 Hash，确保跨平台一致性

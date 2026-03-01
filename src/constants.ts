@@ -70,6 +70,7 @@ export const File = {
   userDir: 'users',
   userDevicesJSON: 'devices.json',
   userSettingsJSON: 'settings.json',
+  userSoundEffectsJSON: 'soundEffects.json',
   listDir: 'list',
   listSnapshotDir: 'snapshot',
   listSnapshotInfoJSON: 'snapshotInfo.json',

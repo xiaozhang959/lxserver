@@ -287,10 +287,15 @@ function prevPage() {
 
 // Settings: Items Per Page
 function changeItemsPerPage(value) {
-    settings.itemsPerPage = value === 'all' ? 'all' : parseInt(value);
-    localStorage.setItem('lx_settings', JSON.stringify(settings));
+    const val = value === 'all' ? 'all' : parseInt(value);
+    if (typeof window.updateSetting === 'function') {
+        window.updateSetting('itemsPerPage', val);
+    } else {
+        settings.itemsPerPage = val;
+        localStorage.setItem('lx_settings', JSON.stringify(settings));
+    }
     currentPage = 1; // Reset to first page
-    renderResults(viewingPlaylist);
+    renderResults(window.viewingPlaylist || viewingPlaylist);
 }
 
 // Load settings from localStorage

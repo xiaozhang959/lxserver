@@ -27,10 +27,10 @@ let currentPage = 1;
 let currentSearch = { name: '', source: 'kw' };
 let currentPlaylist = [];
 let currentIndex = -1;
-window.viewingPlaylist = []; // [New] Currently displayed list in UI
-let currentPlayingScope = 'network'; // [New] Scope for active playback
+window.viewingPlaylist = []; // Currently displayed list in UI
+let currentPlayingScope = 'network'; // Scope for active playback
 window.currentSearchScope = 'network'; // 'network', 'local_list', 'local_all' - Scope for UI view
-let currentPlayingSong = null; // [Fix] Track currently playing song independently of view
+let currentPlayingSong = null; // Track currently playing song independently of view
 const audio = document.getElementById('audio-player');
 let currentPlaybackRate = 1.0;
 
@@ -304,36 +304,22 @@ function handleDragMove(e) {
 
 // 切换代理设置
 function changeProxyPlayback(enabled) {
-    settings.enableProxyPlayback = enabled;
-    localStorage.setItem('lx_settings', JSON.stringify(settings));
-    console.log(`[Settings] Proxy Playback: ${enabled}`);
+    updateSetting('enableProxyPlayback', enabled);
 }
 
 function changeProxyDownload(enabled) {
-    settings.enableProxyDownload = enabled;
-    localStorage.setItem('lx_settings', JSON.stringify(settings));
-    console.log(`[Settings] Proxy Download: ${enabled}`);
+    updateSetting('enableProxyDownload', enabled);
 }
 
 function changeAutoProxy(enabled) {
-    settings.enableAutoProxy = enabled;
-    localStorage.setItem('lx_settings', JSON.stringify(settings));
-    console.log(`[Settings] Auto Proxy: ${enabled}`);
+    updateSetting('enableAutoProxy', enabled);
 }
 
 function changeHotSearchLimit(value) {
     const limit = parseInt(value);
     // [Fix] Allow 0, Check Range 0-50
     if (!isNaN(limit) && limit >= 0 && limit <= 50) {
-        settings.hotSearchLimit = limit;
-        localStorage.setItem('lx_settings', JSON.stringify(settings));
-        console.log(`[Settings] Hot Search Limit: ${limit}`);
-
-        // If currently on search tab and showing hot search, refresh
-        // Check if search-results-header is hidden (means we are in hot search mode or initial state)
-        if (document.getElementById('search-results-header')?.classList.contains('hidden')) {
-            showInitialSearchState(); // Refreshes the view
-        }
+        updateSetting('hotSearchLimit', limit);
     } else {
         showError('请输入 0 到 50 之间的数字');
         // Reset input
@@ -345,17 +331,7 @@ function changeHotSearchLimit(value) {
 function changeLyricFontSize(value) {
     const size = parseFloat(value);
     if (!isNaN(size)) {
-        settings.lyricFontSize = size;
-        localStorage.setItem('lx_settings', JSON.stringify(settings));
-
-        // Apply style
-        document.documentElement.style.setProperty('--lyric-font-size', `${size}rem`);
-
-        // Update UI value display
-        const valueEl = document.getElementById('lyric-font-size-value');
-        if (valueEl) valueEl.innerText = size;
-
-        console.log(`[Settings] Lyric Font Size: ${size}rem`);
+        updateSetting('lyricFontSize', size);
     }
 }
 
@@ -430,33 +406,12 @@ async function loadLocalFonts(targetSelectId = 'lyric-font-family-select', btnEl
 }
 
 function changeLyricFontFamily(value) {
-    settings.lyricFontFamily = value.trim();
-    localStorage.setItem('lx_settings', JSON.stringify(settings));
-
-    // Apply style
-    document.documentElement.style.setProperty('--lyric-font-family', settings.lyricFontFamily || 'inherit');
-    console.log(`[Settings] Lyric Font Family: ${settings.lyricFontFamily}`);
+    updateSetting('lyricFontFamily', value.trim());
 }
 
 // 切换音质偏好
 function changeQualityPreference(quality) {
-    settings.preferredQuality = quality;
-    try {
-        localStorage.setItem('lx_settings', JSON.stringify(settings));
-        console.log(`[Settings] 音质偏好已更改为: ${quality}`);
-
-        // 显示提示
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-24 right-4 bg-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        toast.textContent = `默认音质已设置为: ${window.QualityManager.getQualityDisplayName(quality)}`;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.classList.add('opacity-0', 'transition-opacity');
-            setTimeout(() => toast.remove(), 300);
-        }, 2000);
-    } catch (e) {
-        console.error('[Settings] 保存设置失败:', e);
-    }
+    updateSetting('preferredQuality', quality);
 }
 
 
@@ -799,7 +754,46 @@ function handleSearchKeyPress(e) {
     if (e.key === 'Enter') doSearch();
 }
 
+/**
+ * 快速跳转到搜索页并执行查询
+ * @param {string} query 搜索关键词
+ * @param {string} source 可选，切换到指定搜索源
+ */
+function performSearch(query, source = null) {
+    if (!query || query === '暂无播放' || query === '选择一首歌曲播放') return;
+
+    // 预处理：移除括号及其内容 (支持中英文括号)，通常用于移除“歌曲名 (DJ版)”中的补充信息
+    let cleanedQuery = query.replace(/\s*[\(\uff08].*?[\)\uff09]\s*/g, ' ').trim();
+    // 避免因为移除内容导致的连续多余空格
+    cleanedQuery = cleanedQuery.replace(/\s+/g, ' ');
+
+    // 切换到搜索页
+    switchTab('search');
+
+    // 如果指定了源且属于支持的源，则更新选择框
+    const sourceEl = document.getElementById('search-source');
+    const validSources = ['kw', 'kg', 'tx', 'wy', 'mg'];
+    if (source && sourceEl && validSources.includes(source)) {
+        sourceEl.value = source;
+    }
+
+    // 重置搜索范围到全网搜索
+    if (typeof currentSearchScope !== 'undefined') {
+        currentSearchScope = 'network';
+    }
+
+    // 设置搜索框内容
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.value = cleanedQuery || query; // 如果清理后为空，回退到原查询
+        // 触发搜索
+        doSearch();
+    }
+}
+window.performSearch = performSearch;
+
 const SOURCES = ['kw', 'kg', 'tx', 'wy', 'mg'];
+
 
 //搜索歌曲
 async function doSearch(page = 1, append = false) {
@@ -2113,6 +2107,13 @@ function updatePlayerInfo(song) {
         titleEl.setAttribute('data-text', song.name);
         titleEl.classList.add('truncate');
         titleEl.classList.remove('overflow-hidden');
+
+        // 点击搜索此歌曲
+        titleEl.onclick = (e) => {
+            e.stopPropagation();
+            performSearch(song.name, song.source);
+        };
+        titleEl.classList.add('hover:text-emerald-500', 'cursor-pointer', 'transition-colors');
     }
 
     // Bottom Player - 更新来源标签
@@ -2135,6 +2136,13 @@ function updatePlayerInfo(song) {
         artistEl.setAttribute('data-text', song.singer);
         artistEl.classList.add('truncate');
         artistEl.classList.remove('overflow-hidden');
+
+        // 点击搜索此歌手
+        artistEl.onclick = (e) => {
+            e.stopPropagation();
+            performSearch(song.singer, song.source);
+        };
+        artistEl.classList.add('hover:text-emerald-500', 'cursor-pointer', 'transition-colors');
     }
 
     // 触发滚动检测
@@ -2156,8 +2164,24 @@ function updatePlayerInfo(song) {
 
     // Sidebar Mini Info
     document.getElementById('sidebar-song-info').classList.remove('hidden');
-    document.getElementById('sidebar-song-name').innerText = song.name;
-    document.getElementById('sidebar-singer').innerText = song.singer;
+    const sideSongName = document.getElementById('sidebar-song-name');
+    if (sideSongName) {
+        sideSongName.innerText = song.name;
+        sideSongName.onclick = (e) => {
+            e.stopPropagation();
+            performSearch(song.name, song.source);
+        };
+        sideSongName.classList.add('hover:text-emerald-500', 'cursor-pointer', 'transition-colors');
+    }
+    const sideSinger = document.getElementById('sidebar-singer');
+    if (sideSinger) {
+        sideSinger.innerText = song.singer;
+        sideSinger.onclick = (e) => {
+            e.stopPropagation();
+            performSearch(song.singer, song.source);
+        };
+        sideSinger.classList.add('hover:text-emerald-500', 'cursor-pointer', 'transition-colors');
+    }
 
     // Detail View Info (Lyrics Page)
     const detailTitle = document.getElementById('detail-title');
@@ -2167,10 +2191,22 @@ function updatePlayerInfo(song) {
         // 直接设置文本，由 CSS 处理双行换行和省略号
         detailTitle.innerText = song.name;
         detailTitle.classList.remove('animate-marquee');
+        detailTitle.onclick = (e) => {
+            e.stopPropagation();
+            performSearch(song.name, song.source);
+        };
+        detailTitle.classList.add('hover:text-emerald-500', 'cursor-pointer', 'transition-colors');
     }
 
     const detailArtist = document.getElementById('detail-artist');
-    if (detailArtist) detailArtist.innerText = song.singer;
+    if (detailArtist) {
+        detailArtist.innerText = song.singer;
+        detailArtist.onclick = (e) => {
+            e.stopPropagation();
+            performSearch(song.singer, song.source);
+        };
+        detailArtist.classList.add('hover:text-emerald-500', 'cursor-pointer', 'transition-colors');
+    }
 
 
     // Update Like Button State (Collection Status)
@@ -3103,6 +3139,11 @@ function updateSetting(key, value) {
     if (key === 'playerBackground') {
         applyPlayerBackground(value);
     }
+
+    if (key === 'enablePublicSources') {
+        if (typeof updateSourceScopeUI === 'function') updateSourceScopeUI();
+        if (typeof renderCustomSources === 'function') renderCustomSources();
+    }
 }
 
 //缓存设置项
@@ -3240,7 +3281,58 @@ function syncSettingsUI(key = null, value = null) {
             if (check) check.checked = value;
         }
 
-        // 如果有其他需要实时更新的设置，可以在这里添加
+        // Network Settings
+        if (key === 'enableProxyPlayback') {
+            const check = document.getElementById('toggle-proxy-playback');
+            if (check) check.checked = value;
+        }
+        if (key === 'enableProxyDownload') {
+            const check = document.getElementById('toggle-proxy-download');
+            if (check) check.checked = value;
+        }
+        if (key === 'enableAutoProxy') {
+            const check = document.getElementById('toggle-auto-proxy');
+            if (check) check.checked = value;
+        }
+
+        // Font Settings
+        if (key === 'lyricFontSize') {
+            const slider = document.getElementById('lyric-font-size-slider');
+            const valueEl = document.getElementById('lyric-font-size-value');
+            if (slider) slider.value = value;
+            if (valueEl) valueEl.innerText = value;
+            document.documentElement.style.setProperty('--lyric-font-size', `${value}rem`);
+        }
+        if (key === 'lyricFontFamily') {
+            const select = document.getElementById('lyric-font-family-select');
+            if (select) select.value = value;
+            document.documentElement.style.setProperty('--lyric-font-family', value || 'inherit');
+        }
+
+        // Quality & Misc
+        if (key === 'preferredQuality') {
+            const select = document.getElementById('quality-select');
+            if (select) select.value = value;
+            if (window.showSuccess && window.QualityManager) {
+                window.showSuccess(`默认音质已设置为: ${window.QualityManager.getQualityDisplayName(value)}`);
+            }
+        }
+        if (key === 'hotSearchLimit') {
+            const input = document.getElementById('hot-search-limit-input');
+            if (input) input.value = value;
+            if (document.getElementById('search-results-header')?.classList.contains('hidden')) {
+                showInitialSearchState();
+            }
+        }
+        if (key === 'itemsPerPage') {
+            const select = document.getElementById('items-per-page-select');
+            if (select) select.value = value;
+        }
+        if (key === 'enablePublicSources') {
+            const check = document.getElementById('toggle-public-sources');
+            if (check) check.checked = value;
+        }
+
         return;
     }
 
@@ -3360,6 +3452,39 @@ function syncSettingsUI(key = null, value = null) {
     const urlCache = document.getElementById('setting-enable-url-cache');
     if (urlCache) urlCache.checked = settings.enableSongUrlCache !== false;
 
+    // Full Refresh for Proxy & Others
+    const proxyPlayback = document.getElementById('toggle-proxy-playback');
+    if (proxyPlayback) proxyPlayback.checked = !!settings.enableProxyPlayback;
+
+    const proxyDownload = document.getElementById('toggle-proxy-download');
+    if (proxyDownload) proxyDownload.checked = !!settings.enableProxyDownload;
+
+    const autoProxy = document.getElementById('toggle-auto-proxy');
+    if (autoProxy) autoProxy.checked = !!settings.enableAutoProxy;
+
+    const hsLimitInput = document.getElementById('hot-search-limit-input');
+    if (hsLimitInput) hsLimitInput.value = settings.hotSearchLimit || 20;
+
+    const lFontSizeSlider = document.getElementById('lyric-font-size-slider');
+    const lFontSizeVal = document.getElementById('lyric-font-size-value');
+    if (lFontSizeSlider) lFontSizeSlider.value = settings.lyricFontSize || 1.25;
+    if (lFontSizeVal) lFontSizeVal.innerText = settings.lyricFontSize || 1.25;
+    document.documentElement.style.setProperty('--lyric-font-size', `${settings.lyricFontSize || 1.25}rem`);
+
+    const lFontFamilySelect = document.getElementById('lyric-font-family-select');
+    if (lFontFamilySelect) {
+        lFontFamilySelect.value = settings.lyricFontFamily || '';
+        document.documentElement.style.setProperty('--lyric-font-family', settings.lyricFontFamily || 'inherit');
+    }
+
+    const qSelect = document.getElementById('quality-select');
+    if (qSelect) qSelect.value = settings.preferredQuality || '320k';
+
+    const pSourcesCheck = document.getElementById('toggle-public-sources');
+    if (pSourcesCheck) pSourcesCheck.checked = !!settings.enablePublicSources;
+
+    const iPerPageSelect = document.getElementById('items-per-page-select');
+    if (iPerPageSelect) iPerPageSelect.value = settings.itemsPerPage || 20;
     // Server Cache
     const serverCache = document.getElementById('setting-enable-server-cache');
     if (serverCache) serverCache.checked = settings.enableServerCache !== false;
@@ -4429,6 +4554,11 @@ async function pushSettingsToServer() {
         if (res.ok) {
             console.log('[Settings] 已成功同步到服务器');
         }
+
+        // 同时同步音质配置
+        if (window.soundEffects && typeof window.soundEffects.pushToServer === 'function') {
+            window.soundEffects.pushToServer();
+        }
     } catch (e) {
         console.error('[Settings] 同步到服务器失败:', e);
     }
@@ -4460,6 +4590,11 @@ async function fetchSettingsFromServer() {
             syncSettingsUI();
             if (typeof showSuccess === 'function') {
                 showSuccess('已从服务器恢复设置');
+            }
+
+            // 同时加载音效设置
+            if (window.soundEffects && typeof window.soundEffects.fetchFromServer === 'function') {
+                window.soundEffects.fetchFromServer();
             }
         } else {
             console.log('[Settings] 服务器无设置文件或加载失败');
@@ -5605,13 +5740,7 @@ function updateSourceScopeUI() {
 }
 
 function togglePublicSourcesSetting() {
-    settings.enablePublicSources = !settings.enablePublicSources;
-    // Save
-    localStorage.setItem('lx_settings', JSON.stringify(settings));
-
-    // Refresh Logic
-    updateSourceScopeUI();
-    renderCustomSources(); // Re-render list
+    updateSetting('enablePublicSources', !settings.enablePublicSources);
 }
 
 async function renderCustomSources() {
@@ -7454,3 +7583,27 @@ function togglePlayerPanel() {
 
 // 导出函数
 window.togglePlayerPanel = togglePlayerPanel;
+window.updateSetting = updateSetting;
+
+// Initialize Sound Effects on first play/click
+function initAudioEngine() {
+    if (window.soundEffects && !window._audioEngineInited) {
+        window.soundEffects.init();
+        window._audioEngineInited = true;
+        console.log('[AudioEngine] Sound effects initialized via AudioEngine');
+
+        // Ensure Visualizer captures correct source
+        if (window.musicVisualizer && window.musicVisualizer.init) {
+            window.musicVisualizer.init();
+        }
+    }
+}
+
+// Intercept play for audio engine init
+const originalTogglePlay = window.togglePlay;
+window.togglePlay = function () {
+    initAudioEngine();
+    if (originalTogglePlay) originalTogglePlay();
+};
+
+document.addEventListener('click', initAudioEngine, { once: true });

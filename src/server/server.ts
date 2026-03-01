@@ -1056,6 +1056,63 @@ const handleStartServer = async (port = 9527, ip = '127.0.0.1') => await new Pro
         return
       }
 
+      // [新增] Get User Sound Effects (User Auth)
+      if (pathname === '/api/user/sound-effects' && req.method === 'GET') {
+        const username = req.headers['x-user-name'] as string
+        const password = req.headers['x-user-password'] as string
+
+        const user = global.lx.config.users.find(u => u.name === username && u.password === password)
+        if (!user) {
+          res.writeHead(401)
+          res.end('Unauthorized')
+          return
+        }
+
+        const userSpace = getUserSpace(username)
+        const soundEffectsPath = path.join(userSpace.dataManage.userDir, File.userSoundEffectsJSON)
+
+        if (fs.existsSync(soundEffectsPath)) {
+          const soundEffectsData = fs.readFileSync(soundEffectsPath, 'utf8')
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(soundEffectsData)
+        } else {
+          res.writeHead(404)
+          res.end('Sound effects settings not found')
+        }
+        return
+      }
+
+      // [新增] Update User Sound Effects (User Auth)
+      if (pathname === '/api/user/sound-effects' && req.method === 'POST') {
+        const username = req.headers['x-user-name'] as string
+        const password = req.headers['x-user-password'] as string
+
+        const user = global.lx.config.users.find(u => u.name === username && u.password === password)
+        if (!user) {
+          res.writeHead(401)
+          res.end('Unauthorized')
+          return
+        }
+
+        void readBody(req).then(body => {
+          try {
+            const userSpace = getUserSpace(username)
+            const soundEffectsPath = path.join(userSpace.dataManage.userDir, File.userSoundEffectsJSON)
+
+            // Validate JSON
+            JSON.parse(body)
+
+            fs.writeFileSync(soundEffectsPath, body, 'utf8')
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: true }))
+          } catch (err: any) {
+            res.writeHead(400)
+            res.end('Invalid JSON data')
+          }
+        })
+        return
+      }
+
       // [新增] File Cache APIs
       // 1. Config Cache Location
       if (pathname === '/api/music/cache/config' && req.method === 'POST') {

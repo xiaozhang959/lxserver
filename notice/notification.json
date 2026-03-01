@@ -18,25 +18,25 @@
         }
     },
     {
-        "comment": "=== 版本更新 v1.6.2 ===",
-        "id": "update_v1_6_2",
+        "comment": "=== 版本更新 v1.7.0 ===",
+        "id": "update_v1_7_0",
         "status": "active",
         "type": "version",
         "logic": {
-            "target_version": "v1.6.2",
+            "target_version": "v1.7.0",
             "operator": "<",
             "interval_hours": 24
         },
         "ui": {
-            "title": "发现新版本 v1.6.2",
-            "date": "2026-02-28",
-            "message": "本次更新带来了以下重要功能：\n1. 💾 自动同步：新增“保存设置到文件”，支持将个人偏好实时同步至服务器，实现跨端一致体验。\n2. 🚪 登出功能：同步面板新增“退出登录”按钮，更方便、更安全地管理您的账号同步状态。\n3. 🛠️ 逻辑重构：统一重置逻辑，优化设置项说明。",
+            "title": "发现新版本 v1.7.0",
+            "date": "2026-03-01",
+            "message": "本次更新带来了以下重要功能：\n1. 🎛️ 均衡器与音效：新增 10 段专业均衡器、环境混响及 3D 环绕声，打造您的私人调音台。\n2. 🔍 快捷跳转：点击播放栏或详情页的标题/歌手名，即可一键切至搜索结果。\n3. 🔃 同步优化：彻底修复代理设置、分页数量、热搜限制等部分设置项无法同步至服务器的问题。",
             "confirm_text": "我知道了",
             "cancel_text": "稍后提醒"
         },
         "action": {
             "type": "link",
-            "url": "https://github.com/XCQ0607/lxserver/releases/tag/v1.6.2"
+            "url": "https://github.com/XCQ0607/lxserver/releases/tag/v1.7.0"
         }
     }
 ]
