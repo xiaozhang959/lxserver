@@ -17,7 +17,7 @@ RUN apk add --update \
 
 
 FROM base AS final
-WORKDIR /server
+WORKDIR /lxmusic
 
 RUN apk add --update --no-cache nodejs
 
