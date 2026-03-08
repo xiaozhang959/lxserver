@@ -23,9 +23,9 @@ RUN apk add --update --no-cache nodejs
 
 COPY --from=builder ./source-code/build-output ./
 
-VOLUME /server/data
-ENV DATA_PATH '/server/data'
-ENV LOG_PATH '/server/data/logs'
+VOLUME /lxmusic/data
+ENV DATA_PATH '/lxmusic/data'
+ENV LOG_PATH '/lxmusic/data/logs'
 
 EXPOSE 9527
 ENV NODE_ENV 'production'
@@ -37,15 +37,15 @@ ENV BIND_IP '0.0.0.0'
 # ENV LIST_ADD_MUSIC_LOCATION_TYPE 'top'
 ENV zjw 'Destiny959.'
 # ENV LX_USER_user2 '{ "password": "123.456", "maxSnapshotNum": 10, "list.addMusicLocationType": "top" }'
-# ENV CONFIG_PATH '/server/config.js'
+ENV CONFIG_PATH '/lxmusic/config.js'
 # ENV WEBDAV_URL ''
 # ENV WEBDAV_USERNAME ''
 # ENV WEBDAV_PASSWORD ''
 # ENV SYNC_INTERVAL '60'
 # ENV ENABLE_WEBPLAYER_AUTH 'false'
 # ENV WEBPLAYER_PASSWORD '123456'
-# ENV LOG_PATH '/server/logs'
-# ENV DATA_PATH '/server/data'
+ENV LOG_PATH '/lxmusic/logs'
+ENV DATA_PATH '/lxmusic/data'
 # ENV PLAYER_ENABLE_AUTH 'true'
 # ENV PLAYER_PASSWORD '123.456'
 
