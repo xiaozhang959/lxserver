@@ -17,7 +17,7 @@ RUN apk add --update \
 
 
 FROM base AS final
-WORKDIR /lxmusic
+WORKDIR /server
 
 RUN apk add --update --no-cache nodejs
 
@@ -43,7 +43,7 @@ ENV CONFIG_PATH '/lxmusic/config.js'
 # ENV WEBDAV_PASSWORD ''
 # ENV SYNC_INTERVAL '60'
 # ENV ENABLE_WEBPLAYER_AUTH 'false'
-# ENV WEBPLAYER_PASSWORD '123456'
+ENV WEBPLAYER_PASSWORD 'EkUk7oq4hMQEU!gK'
 ENV LOG_PATH '/lxmusic/logs'
 ENV DATA_PATH '/lxmusic/data'
 # ENV PLAYER_ENABLE_AUTH 'true'
